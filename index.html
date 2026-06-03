@@ -34,15 +34,15 @@
 
 
 <script>
-  // 1. Firebase 초기화 설정
+  // 🚨 고객님께서 주신 새로운 Firebase(futures-field) 키값으로 업데이트 완료 🚨
   const firebaseConfig = {
-    apiKey: "AIzaSyAoVGRAKKfCr-IEh7s4HVCc8r5wpeWUv0Q",
-    authDomain: "check-calendar-app-2fd92.firebaseapp.com",
-    projectId: "check-calendar-app-2fd92",
-    storageBucket: "check-calendar-app-2fd92.firebasestorage.app",
-    messagingSenderId: "762125584592",
-    appId: "1:762125584592:web:ed057de6598f8e9bb476d5",
-    measurementId: "G-CK69NSE8TX"
+    apiKey: "AIzaSyByPPoLHr9X1Zy8wOt0mNUtWpmnUSQ31iA",
+    authDomain: "futures-field.firebaseapp.com",
+    projectId: "futures-field",
+    storageBucket: "futures-field.firebasestorage.app",
+    messagingSenderId: "954078993326",
+    appId: "1:954078993326:web:b335f0c0453227844ac63f",
+    measurementId: "G-DQE3B4JVL0"
   };
   
   if (!firebase.apps.length) {
@@ -232,15 +232,15 @@ function ExcelExportView({ reports }) {
 
 
       sheet.columns = [
-        { header: '점검일자', key: 'date', width: 15 },           // 1
-        { header: '대분류', key: 'category', width: 25 },       // 2
-        { header: '공종', key: 'trade', width: 12 },            // 3
-        { header: '점검자', key: 'inspectorName', width: 15 },  // 4
-        { header: '상태', key: 'status', width: 15 },           // 5
-        { header: '현장사진', key: 'photo', width: 30 },        // 6
-        { header: '상세위치', key: 'locationDesc', width: 30 }, // 7
-        { header: '사진설명', key: 'photoDesc', width: 40 },    // 8
-        { header: '비고', key: 'remarks', width: 30 }           // 9
+        { header: '점검일자', key: 'date', width: 15 },
+        { header: '대분류', key: 'category', width: 25 },
+        { header: '공종', key: 'trade', width: 12 },
+        { header: '점검자', key: 'inspectorName', width: 15 },
+        { header: '상태', key: 'status', width: 15 },
+        { header: '현장사진', key: 'photo', width: 30 },
+        { header: '상세위치', key: 'locationDesc', width: 30 },
+        { header: '사진설명', key: 'photoDesc', width: 40 },
+        { header: '비고', key: 'remarks', width: 30 }
       ];
 
 
@@ -654,11 +654,12 @@ function App() {
 
 
   const handleMigration = async () => {
-    if (!window.confirm("데이터베이스의 모든 '조치 예정' 글들을 '조치 대기'로 일괄 변경하시겠습니까?")) return;
+    // 혹시라도 한 번 더 물어보는 안전 장치
+    if (!window.confirm("정말로 모든 '조치 예정' 상태를 '조치 대기'로 바꾸시겠습니까? (이 작업은 되돌릴 수 없습니다!)")) return;
     try {
       const snap = await db.collection(reportsPath).where('status', '==', '조치 예정').get();
       if (snap.empty) {
-        alert("변경할 데이터가 없습니다 (이미 모두 수정됨).");
+        alert("업데이트 할 '조치 예정' 글이 더 이상 존재하지 않습니다.");
         return;
       }
       const batch = db.batch();
@@ -666,7 +667,7 @@ function App() {
         batch.update(doc.ref, { status: '조치 대기' });
       });
       await batch.commit();
-      alert(`총 ${snap.size}개의 데이터가 '조치 대기'로 성공적으로 업데이트 되었습니다!`);
+      alert(`🎉 총 ${snap.size}개의 글이 '조치 대기' 상태로 정상 변경되었습니다!`);
     } catch(e) {
       alert("업데이트 중 오류 발생: " + e.message);
     }
@@ -803,8 +804,8 @@ function App() {
         <div className="w-full px-4 md:px-8 h-16 flex items-center justify-between max-w-[1800px] mx-auto">
           <div className="flex items-center gap-2 cursor-pointer hover:opacity-80" onClick={() => { setView('dashboard'); setActiveTab('voc'); }}>
             <Icon name="file-warning" size={24} className="text-yellow-400 shrink-0"/>
-            {/* 🚨 사이트 이름 (강화) 추가 및 모바일 대응 축소 🚨 */}
-            <span className="font-bold text-xs sm:text-sm md:text-lg tracking-tight whitespace-nowrap">시설안전점검통합시스템 (강화)</span>
+            {/* 🚨 화면 크기에 맞춰 폰트 크기 동적 조절 🚨 */}
+            <span className="font-bold text-[13px] sm:text-base md:text-lg tracking-tight whitespace-nowrap">시설안전점검통합시스템 (강화)</span>
           </div>
           <div className="flex items-center gap-2 text-sm bg-slate-700 px-3 py-1.5 rounded-full shadow-inner shrink-0">
             <Icon name="user" size={16}/> <span className="font-bold truncate max-w-[100px] sm:max-w-none">{userProfile?.name} 님</span>
@@ -824,7 +825,6 @@ function App() {
         {view === 'dashboard' && (
           <div className="w-full max-w-[1800px] mx-auto flex flex-col gap-6">
             <div className="flex flex-wrap bg-white p-1.5 rounded-2xl shadow-sm border border-gray-200 w-fit">
-              {/* 🚨 탭 명칭: ssg 퓨처스 필드 🚨 */}
               <button onClick={() => setActiveTab('voc')} className={`px-6 py-3 rounded-xl text-sm font-black flex items-center gap-2 transition-all ${activeTab==='voc'?'bg-slate-800 text-white shadow-md':'text-gray-500 hover:bg-gray-100'}`}>
                 <Icon name="file-warning" size={18}/> ssg 퓨처스 필드
               </button>
@@ -929,14 +929,16 @@ function App() {
                     </table>
                   </div>
                 </div>
-                
-                <div className="mt-8 p-4 bg-gray-100 rounded-xl flex flex-col md:flex-row items-center justify-between border border-gray-200 gap-4">
+
+
+                {/* 🚨 구버전 데이터 호환용 업데이트 버튼 영역 🚨 */}
+                <div className="mt-8 p-5 bg-gray-50 border border-gray-200 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
                   <div className="text-sm text-gray-600 font-bold flex items-center">
-                    <Icon name="info" size={18} className="text-blue-500 mr-2" />
-                    [시스템 관리] 예전에 등록했던 글 중 상태가 '조치 예정'인 데이터를 '조치 대기'로 호환 업데이트 합니다.
+                    <Icon name="alert-circle" size={20} className="text-blue-500 mr-3 shrink-0" />
+                    <span>[관리자 도구] 이전에 작성했던 글 중 상태가 '조치 예정'으로 남아있는 글들을 새로운 시스템에 맞게 '조치 대기' 상태로 일괄 변경합니다.</span>
                   </div>
-                  <button onClick={handleMigration} className="px-5 py-2.5 bg-slate-700 text-white text-sm font-bold rounded-xl shadow hover:bg-slate-800 transition-colors whitespace-nowrap">
-                    일괄 업데이트 실행
+                  <button onClick={handleMigration} className="px-5 py-3 bg-slate-700 text-white text-sm font-black rounded-xl shadow-md hover:bg-slate-800 transition-colors whitespace-nowrap shrink-0 active:scale-95">
+                    구버전 데이터 일괄 업데이트
                   </button>
                 </div>
 
