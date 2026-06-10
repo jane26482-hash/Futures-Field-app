@@ -345,9 +345,12 @@ function CalendarView({ logs, reports, constructions, userProfile, showToast }) 
           const dateStr = fmt(year, month, day); const isToday = dateStr === todayStr;
           const dayLogs = logs.filter(l => l.date === dateStr);
           
-          // 배지 연동: ssg 퓨처스 필드 글 등록 확인 및 공사 일정 확인
+          // 배지 연동: ssg 퓨처스 필드 글 등록 확인
           const hasReport = reports.some(r => r.date === dateStr);
-          const expectedConsts = constructions.filter(c => c.expectedDate === dateStr);
+          
+          // 공사 일지 예정/완료 배지 연동
+          // 공사가 완료(completedDate 존재)되었다면, 예정 배지는 표시하지 않음
+          const expectedConsts = constructions.filter(c => c.expectedDate === dateStr && !c.completedDate);
           const completedConsts = constructions.filter(c => c.completedDate === dateStr);
 
           return (
@@ -366,7 +369,7 @@ function CalendarView({ logs, reports, constructions, userProfile, showToast }) 
                   </div>
                 )}
 
-                {/* 공사 일지 예정 배지 */}
+                {/* 공사 일지 예정 배지 (완료된 공사는 나타나지 않음) */}
                 {expectedConsts.map(c => (
                   <div key={`exp-${c.id}`} className="bg-red-50 text-red-700 text-[11px] xl:text-xs font-black px-2 py-1.5 rounded-lg shadow-sm border border-red-200 flex items-center gap-1 shrink-0 overflow-hidden">
                     <Icon name="siren" size={14} className="shrink-0 animate-pulse"/> <span className="truncate">{c.name} - 예정</span>
@@ -445,8 +448,6 @@ function ConstructionForm({ existingData, onSave, onCancel, showToast }) {
 
   const submit = async () => {
     if (!formData.name.trim()) { setError('공사명을 입력해주세요.'); return; }
-    // 🚨 사진 필수 검증 부분 제거 🚨
-    // if (!formData.photoBase64) { setError('공사 사진을 첨부해 주세요.'); return; }
     
     setSubmit(true);
     try {
@@ -476,7 +477,6 @@ function ConstructionForm({ existingData, onSave, onCancel, showToast }) {
           <div><label className="block text-sm font-bold mb-2">공사 완료일 (공사 완료 시 지정)</label><input type="date" className="w-full p-3 border rounded-xl bg-gray-50 font-bold" value={formData.completedDate} onChange={e => set('completedDate', e.target.value)} /></div>
         </div>
         <div>
-          {/* 🚨 (선택) 으로 텍스트 변경 🚨 */}
           <label className="block text-sm font-bold mb-2 flex items-center gap-2"><Icon name="camera" className="text-blue-600"/> 공사 사진 첨부 (선택)</label>
           {formData.photoBase64 ? (
             <div className="relative w-full rounded-xl overflow-hidden border flex justify-center group"><img src={formData.photoBase64} className="max-h-64 object-contain bg-gray-50"/><button onClick={() => set('photoBase64','')} className="absolute top-3 right-3 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100"><Icon name="x"/></button></div>
@@ -944,35 +944,45 @@ function App() {
               <div className="w-full max-w-7xl mx-auto animate-in fade-in duration-300">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-black flex items-center gap-2"><Icon name="hammer" className="text-slate-800"/> 공사 일지</h2>
-                  <button onClick={() => { setSelectedConst(null); setView('const-form'); }} className="bg-slate-800 text-white px-6 py-3 rounded-xl font-black shrink-0"><Icon name="plus" size={18}/> 신규 공사 등록</button>
+                  <button onClick={() => { setSelectedConst(null); setView('const-form'); }} className="bg-slate-800 text-white px-6 py-3 rounded-xl font-black shrink-0 shadow-md hover:bg-slate-900 transition-colors">
+                    <Icon name="plus" size={18}/> 신규 공사 등록
+                  </button>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {constructions.map(c => {
-                    const isCompleted = !!c.completedDate;
-                    return (
-                      <div key={c.id} onClick={() => { setSelectedConst(c); setView('const-detail'); }} className="bg-white rounded-2xl shadow-sm border p-5 cursor-pointer hover:shadow-md transition-shadow group flex flex-col h-full">
-                        <div className="flex justify-between items-start mb-3">
-                          <span className={`px-3 py-1.5 rounded-full text-xs font-black border flex items-center gap-1 shadow-sm ${isCompleted ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                            {isCompleted ? <><Icon name="flag" size={14}/> 완료됨</> : <><Icon name="siren" size={14} className="animate-pulse text-red-500"/> 공사 중 (진행/예정)</>}
-                          </span>
-                          <span className="text-xs font-black bg-gray-100 px-2.5 py-1 rounded-md text-gray-600 border">{c.trade}</span>
-                        </div>
-                        <h3 className="font-black text-lg mb-4 text-slate-800 group-hover:text-blue-600">{c.name}</h3>
-                        
-                        {/* 사진이 있을 때만 표시 */}
-                        {c.photoBase64 && <img src={c.photoBase64} className="w-full h-40 object-cover rounded-xl mb-4 border bg-gray-50"/>}
-                        
-                        <div className="mt-auto space-y-1 bg-gray-50 p-4 rounded-xl text-sm font-bold text-gray-600 border">
-                          <p className="flex justify-between"><span>예정일:</span> <span>{c.expectedDate || '-'}</span></p>
-                          <p className={`flex justify-between pt-1 border-t mt-1 ${isCompleted ? 'text-green-600' : 'text-gray-400'}`}>
-                            <span>완료일:</span> <span>{c.completedDate || '미정'}</span>
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {constructions.length === 0 && <div className="col-span-full p-16 text-center text-gray-500 font-bold bg-white rounded-2xl border">등록된 공사 일지가 없습니다.</div>}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                      <thead className="bg-gray-100 border-b border-gray-200 text-gray-700">
+                        <tr>
+                          <th className="p-5 font-black w-32 text-center">진행상태</th>
+                          <th className="p-5 font-black w-24">공종</th>
+                          <th className="p-5 font-black w-full">공사명</th>
+                          <th className="p-5 font-black w-40 text-center">공사 예정일</th>
+                          <th className="p-5 font-black w-40 text-center">공사 완료일</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {constructions.length === 0 ? (
+                          <tr><td colSpan="5" className="p-16 text-center text-gray-500 font-bold">등록된 공사 일지가 없습니다.</td></tr>
+                        ) : constructions.map(c => {
+                          const isCompleted = !!c.completedDate;
+                          return (
+                            <tr key={c.id} onClick={() => { setSelectedConst(c); setView('const-detail'); }} className="hover:bg-blue-50 cursor-pointer transition-colors group">
+                              <td className="p-5 text-center">
+                                <span className={`px-3 py-1.5 rounded-full text-xs font-black border flex items-center justify-center gap-1 shadow-sm mx-auto w-fit ${isCompleted ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                                  {isCompleted ? <><Icon name="flag" size={14}/> 완료됨</> : <><Icon name="siren" size={14} className="animate-pulse text-red-500"/> 진행/예정</>}
+                                </span>
+                              </td>
+                              <td className="p-5 font-black text-gray-800">{c.trade}</td>
+                              <td className="p-5 font-black text-gray-900 group-hover:text-blue-700">{c.name}</td>
+                              <td className="p-5 font-bold text-gray-600 text-center">{c.expectedDate || '-'}</td>
+                              <td className={`p-5 font-bold text-center ${isCompleted ? 'text-green-600' : 'text-gray-400'}`}>{c.completedDate || '미정'}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
@@ -1010,7 +1020,6 @@ function App() {
               </span>
             </div>
             
-            {/* 🚨 사진이 있을 경우에만 이미지 표시 🚨 */}
             {selectedConst.photoBase64 && (
               <img src={selectedConst.photoBase64} className="w-full rounded-xl border mb-6"/>
             )}
